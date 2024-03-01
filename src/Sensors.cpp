@@ -226,6 +226,19 @@ void Sensors::setCO2AltitudeOffset(float altitude) {
  */
 void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
 
+/**
+ * @brief set the low power mode
+ * @param mode (mandatory) LowPowerMode enum value.
+ * @return true if the low power mode is set, false otherwise.
+ */
+bool Sensors::setLowPowerMode(LowPowerMode mode) { lowPowerConfig = mode; }
+
+/**
+ * @brief get the low power mode
+ * @return LowPowerMode enum value.
+ */
+LowPowerMode Sensors::getLowPowerMode() { return lowPowerConfig; }
+
 /// restart and re-init all sensors (not recommended)
 void Sensors::restart() {
   _serial->flush();

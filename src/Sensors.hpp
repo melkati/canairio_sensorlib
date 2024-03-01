@@ -155,8 +155,20 @@ enum class SensorGroup {
   SENSOR_ENV,
   SENSOR_RAD  // CAJOE_GEIGER
 };
+
 // TEMPERATURE UNITS
 enum class TEMPUNIT { CELSIUS, FAHRENHEIT, KELVIN };
+
+// LOW POWER MODES
+enum LowPowerMode { NO_LOWPOWER, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
+
+// LOW POWER CONFIG
+struct LowPowerConfig {
+  LowPowerMode lowPowerMode;
+  int measurementIntervalSeconds;
+};
+
+LowPowerConfig lowPowerConfig;
 
 typedef void (*errorCbFn)(const char *msg);
 typedef void (*voidCbFn)();
@@ -317,6 +329,10 @@ class Sensors {
   void setSeaLevelPressure(float hpa);
 
   void setCO2RecalibrationFactor(int ppmValue);
+
+  bool setLowPowerMode(LowPowerMode mode);
+
+  LowPowerMode getLowPowerMode();
 
   void detectI2COnly(bool enable);
 
