@@ -330,7 +330,7 @@ class Sensors {
 
   void setCO2RecalibrationFactor(int ppmValue);
 
-  bool setLowPowerMode(LowPowerMode mode);
+  void setLowPowerMode(LowPowerMode lowPowerMode);
 
   LowPowerMode getLowPowerMode();
 

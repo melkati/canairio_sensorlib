@@ -231,7 +231,9 @@ void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
  * @param mode (mandatory) LowPowerMode enum value.
  * @return true if the low power mode is set, false otherwise.
  */
-bool Sensors::setLowPowerMode(LowPowerMode mode) { lowPowerConfig.lowPowerMode = mode; }
+void Sensors::setLowPowerMode(LowPowerMode lowPowerMode) {
+  lowPowerConfig.lowPowerMode = lowPowerMode;
+}
 
 /**
  * @brief get the low power mode
@@ -1054,32 +1056,31 @@ void Sensors::CO2scd4xRead() {
   if (!isSensorRegistered(SENSORS::SSCD4X)) return;
   uint16_t tCO2 = 0;
   uint16_t error = 0;
-  bool sensorDataReady = false;
   float tCO2temp, tCO2humi = 0;
   bool sensorDataReady = false;
   switch (lowPowerConfig.lowPowerMode) {
     case NO_LOWPOWER:
-      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      error = scd4x.getDataReadyFlag(sensorDataReady);
       if (!sensorDataReady) return;
       error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
       if (error) return;
       break;
     case BASIC_LOWPOWER:
-      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      error = scd4x.getDataReadyFlag(sensorDataReady);
       if (!sensorDataReady) return;
       error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
       break;
     case MEDIUM_LOWPOWER:
       scd4x.measureSingleShot();
-      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      error = scd4x.getDataReadyFlag(sensorDataReady);
       if (!sensorDataReady) return;
       error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
       break;
     case MAXIMUM_LOWPOWER:
       scd4x.wakeUp();
       scd4x.measureSingleShot();
-      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
-      if (!scd4x.getsensorDataReadyFlag()) {
+      error = scd4x.getDataReadyFlag(sensorDataReady);
+      if (!sensorDataReady) {
         scd4x.powerDown();
         return;
       } else {
@@ -1090,14 +1091,9 @@ void Sensors::CO2scd4xRead() {
     default:
       error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
   }
-  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {
-    error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
-  }
+
   if (error) return;
 
-  if (lowPowerConfig.lowPowerMode == LOWPOWER) {
-    error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
-  }
   CO2Val = tCO2;
   CO2humi = tCO2humi;
   CO2temp = tCO2temp;
@@ -1695,7 +1691,7 @@ void Sensors::CO2scd30Init() {
   }
 
   if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {
-    if (!scd30.setMeasurementInterval(measurementIntervalSeconds)) {
+    if (!scd30.setMeasurementInterval(sample_time)) {
       DEBUG("[W][SLIB] SCD30 basic low power measure\t: setting error");
     }
   }
