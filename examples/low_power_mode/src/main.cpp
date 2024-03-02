@@ -81,14 +81,13 @@ void setup() {
   sensors.setOnErrorCallBack(&onSensorDataError);  // [optional] error callback
   sensors.setDebugMode(true);                      // [optional] debug mode
   sensors.detectI2COnly(true);  // force to detect only i2c sensors (disable for UART sensors)
-  sensors.setLowPowerMode(lowPowerMode);  // set the chosen low power mode
+  sensors.setLowPowerMode(NO_LOWPOWER);  // set the chosen low power mode
 
-  switch (lowPowerConfig.lowPowerMode) {
+  switch (sensors.getLowPowerMode()) {
     // High performance mode. Sampling period 5 sec, power supply current @3.3V 15mA for SCD4x
     case NO_LOWPOWER:
-      sensors.setSampleTime(
-          2);          // config sensors sample time interval. Set sample time only works for SCD30
-      sensors.init();  // Auto detection to UART and i2c sensors
+      sensors.setSampleTime(2);  // config sensors sample time interval. Only works for SCD30
+      sensors.init();            // Auto detection to UART and i2c sensors
       break;
 
       // Low power mode. Sampling period 30 sec, power supply current @3.3V 3.2mA for SCD4x
