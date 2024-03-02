@@ -1053,9 +1053,51 @@ void Sensors::CO2scd30Read() {
 void Sensors::CO2scd4xRead() {
   if (!isSensorRegistered(SENSORS::SSCD4X)) return;
   uint16_t tCO2 = 0;
+  uint16_t error = 0;
+  bool sensorDataReady = false;
   float tCO2temp, tCO2humi = 0;
-  uint16_t error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+  bool sensorDataReady = false;
+  switch (lowPowerConfig.lowPowerMode) {
+    case NO_LOWPOWER:
+      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      if (!sensorDataReady) return;
+      error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+      if (error) return;
+      break;
+    case BASIC_LOWPOWER:
+      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      if (!sensorDataReady) return;
+      error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+      break;
+    case MEDIUM_LOWPOWER:
+      scd4x.measureSingleShot();
+      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      if (!sensorDataReady) return;
+      error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+      break;
+    case MAXIMUM_LOWPOWER:
+      scd4x.wakeUp();
+      scd4x.measureSingleShot();
+      error = scd4x.getsensorDataReadyFlag(sensorDataReady);
+      if (!scd4x.getsensorDataReadyFlag()) {
+        scd4x.powerDown();
+        return;
+      } else {
+        error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+      }
+      scd4x.powerDown();
+      break;
+    default:
+      error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+  }
+  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {
+    error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+  }
   if (error) return;
+
+  if (lowPowerConfig.lowPowerMode == LOWPOWER) {
+    error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
+  }
   CO2Val = tCO2;
   CO2humi = tCO2humi;
   CO2temp = tCO2temp;
@@ -1645,6 +1687,18 @@ void Sensors::CO2scd30Init() {
     setSCD30TempOffset(toffset);
     delay(10);
   }
+
+  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {
+    if (!scd30.setMeasurementInterval(2)) {
+      DEBUG("[W][SLIB] SCD30 periodic measure\t: setting error");
+    }
+  }
+
+  if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {
+    if (!scd30.setMeasurementInterval(measurementIntervalSeconds)) {
+      DEBUG("[W][SLIB] SCD30 basic low power measure\t: setting error");
+    }
+  }
 }
 
 /// set SCD30 temperature compensation
@@ -1677,7 +1731,8 @@ void Sensors::setSCD30AltitudeOffset(float offset) {
 void Sensors::CO2scd4xInit() {
   sensorAnnounce(SENSORS::SSCD4X);
   float tTemperatureOffset, offsetDifference;
-  uint16_t tSensorAltitude;
+  uint16_t tSensorAltitude, dummyCO2;
+  float dummyHumi, dummyTemp;
   uint16_t error;
   scd4x.begin(Wire);
   error = scd4x.stopPeriodicMeasurement();
@@ -1696,8 +1751,55 @@ void Sensors::CO2scd4xInit() {
     Serial.println("-->[SLIB] SCD4x new offset\t: Temp offset to " + String(toffset));
     setSCD4xTempOffset(toffset);
   }
-  error = scd4x.startPeriodicMeasurement();
-  if (error) DEBUG("[W][SLIB] SCD4x periodic measure\t: starting error:", String(error).c_str());
+
+  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {  // High-Performance Mode
+    error = scd4x.startPeriodicMeasurement();
+    if (error) DEBUG("[W][SLIB] SCD4x periodic measure\t: starting error:", String(error).c_str());
+  }
+
+  if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {  // Low Power Mode
+    sensors.setSampleTime(30);
+    error = scd4x.startLowPowerPeriodicMeasurement();
+    if (error)
+      DEBUG("[W][SLIB] SCD4x basic low power measure\t: starting error:", String(error).c_str());
+  }
+
+  if (lowPowerConfig.lowPowerMode == MEDIUM_LOWPOWER) {  // Idle Single Shot Operation (SCD41 only).
+    sensors.setSampleTime(0);
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: starting error:", String(error).c_str());
+    error = scd4x.measureSingleShot();
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: measureSingleShot() error:",
+            String(error).c_str());
+    error = scd4x.readMeasurement(dummyCO2, dummyTemp, dummyHumi);
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: readMeasurement() error:",
+            String(error).c_str());
+  }
+
+  if (lowPowerConfig.lowPowerMode ==
+      MAXIMUM_LOWPOWER) {  // Power Cycled Single Shot Operation (SCD41 only)
+    // Power cycled single shot operation preferable to idle single shot operation only when the
+    // average sampling period is above 380 seconds.
+    sensors.setSampleTime(0);
+    error = scd4x.powerDown();
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: powerDown() error:",
+            String(error).c_str());
+    error = scd4x.wakeUp();
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: powerUp() error:",
+            String(error).c_str());
+    error = scd4x.measureSingleShot();
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: measureSingleShot() error:",
+            String(error).c_str());
+    error = scd4x.readMeasurement(dummyCO2, dummyTemp, dummyHumi);
+    if (error)
+      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: readMeasurement() error:",
+            String(error).c_str());
+  }
 }
 
 /// set SCD4x temperature compensation
