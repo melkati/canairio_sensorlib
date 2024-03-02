@@ -231,13 +231,13 @@ void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
  * @param mode (mandatory) LowPowerMode enum value.
  * @return true if the low power mode is set, false otherwise.
  */
-bool Sensors::setLowPowerMode(LowPowerMode mode) { lowPowerConfig = mode; }
+bool Sensors::setLowPowerMode(LowPowerMode mode) { lowPowerConfig.lowPowerMode = mode; }
 
 /**
  * @brief get the low power mode
  * @return LowPowerMode enum value.
  */
-LowPowerMode Sensors::getLowPowerMode() { return lowPowerConfig; }
+LowPowerMode Sensors::getLowPowerMode() { return lowPowerConfig.lowPowerMode; }
 
 /// restart and re-init all sensors (not recommended)
 void Sensors::restart() {
