@@ -159,6 +159,9 @@ enum class SensorGroup {
 // TEMPERATURE UNITS
 enum class TEMPUNIT { CELSIUS, FAHRENHEIT, KELVIN };
 
+// SCD4X Models
+enum SCD4XModels { SCD4X_SCD40, SCD4X_SCD41, SCD4X_SCD42, SCD4X_NONE = 255 };
+
 // LOW POWER MODES
 enum LowPowerMode { NO_LOWPOWER, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
 
@@ -177,8 +180,13 @@ typedef void (*voidCbFn)();
  */
 class Sensors {
  public:
+  String scd4xModel = "NONE";
 
- LowPowerConfig lowPowerConfig;
+  uint16_t scd4xFeatureSet = 0;
+
+  /// Low power configuration
+
+  LowPowerConfig lowPowerConfig;
   /// SPS30 values. Only for Sensirion SPS30 sensor.
   struct sps_values val;
 
@@ -259,6 +267,8 @@ class Sensors {
   GEIGER *rad;
 
   void init(u_int pms_type = 0, int pms_rx = PMS_RX, int pms_tx = PMS_TX);
+
+  void initCO2LowPowerMode(LowPowerMode lowPowerMode);
 
   void loop();
 
@@ -360,6 +370,8 @@ class Sensors {
 
   UNIT getNextUnit();
 
+  String getSCD4xModel();
+
   void resetUnitsRegister();
 
   void resetSensorsRegister();
@@ -451,6 +463,7 @@ class Sensors {
   void setSCD4xTempOffset(float offset);
   float getSCD4xTempOffset();
   void setSCD4xAltitudeOffset(float offset);
+  uint16_t getSCD4xFeatureSet();
 
   void sen5xInit();
   void sen5xRead();
