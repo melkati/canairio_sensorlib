@@ -149,6 +149,33 @@ void Sensors::init(u_int pms_type, int pms_rx, int pms_tx) {
   printSensorsRegistered(true);
 }
 
+/**
+ * @brief CO2 sensors with low power capbility init (actually only SCD4x and SCD30)
+ * @param lowPowerMode (mandatory) LowPowerMode enum value.
+ */
+void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
+// override with debug INFO level (>=3)
+#ifdef CORE_DEBUG_LEVEL
+  if (CORE_DEBUG_LEVEL >= 3) devmode = true;
+#endif
+  if (devmode) {
+    Serial.printf("-->[SLIB] CanAirIO SensorsLib\t: v%sr%d\r\n", CSL_VERSION, CSL_REVISION);
+    Serial.printf("-->[SLIB] sensorslib devmod\t: %s\r\n", devmode ? "true" : "false");
+  }
+
+  Serial.println("-->[SLIB] temperature offset\t: " + String(toffset));
+  Serial.println("-->[SLIB] altitude offset   \t: " + String(altoffset));
+  Serial.println("-->[SLIB] sea level pressure\t: " + String(sealevel) + " hPa");
+  Serial.printf("-->[SLIB] only i2c sensors  \t: %s\r\n", i2conly ? "true" : "false");
+  Serial.printf("-->[SLIB] only CO2 low power \t: %s\r\n",
+                lowPowerMode != NO_LOWPOWER ? "true" : "false");
+
+  startI2C();
+  CO2scd30Init();
+  CO2scd4xInit();
+  printSensorsRegistered(true);
+}
+
 /// set loop time interval for each sensor sample
 void Sensors::setSampleTime(int seconds) {
   sample_time = seconds;
@@ -229,7 +256,6 @@ void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
 /**
  * @brief set the low power mode
  * @param mode (mandatory) LowPowerMode enum value.
- * @return true if the low power mode is set, false otherwise.
  */
 void Sensors::setLowPowerMode(LowPowerMode lowPowerMode) {
   lowPowerConfig.lowPowerMode = lowPowerMode;
@@ -1734,6 +1760,9 @@ void Sensors::CO2scd4xInit() {
   error = scd4x.stopPeriodicMeasurement();
   if (error) return;
   sensorRegister(SENSORS::SSCD4X);
+  scd4xFeatureSet = getSCD4xFeatureSet();
+  DEBUG("-->[SLIB] SCD4x Feature Set\t:", String(scd4xFeatureSet).c_str());
+  scd4xModel = getSCD4xModel();
   scd4x.getTemperatureOffset(tTemperatureOffset);
   scd4x.getSensorAltitude(tSensorAltitude);
   DEBUG("-->[SLIB] SCD4x Temp offset\t:", String(tTemperatureOffset).c_str());
@@ -1749,11 +1778,12 @@ void Sensors::CO2scd4xInit() {
   }
 
   if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {  // High-Performance Mode
+    setSampleTime(5);
     error = scd4x.startPeriodicMeasurement();
     if (error) {
       DEBUG("[W][SLIB] SCD4x periodic measure\t: starting error:", String(error).c_str());
     } else {
-      DEBUG("-->[W][SLIB] SCD4x periodic measure\t: done!");
+      DEBUG("-->[W][SLIB] SCD4x start periodic measurement\t: done!");
     }
   }
 
@@ -1761,16 +1791,13 @@ void Sensors::CO2scd4xInit() {
     sensors.setSampleTime(30);
     error = scd4x.startLowPowerPeriodicMeasurement();
     if (error) {
-      DEBUG("[W][SLIB] SCD4x basic low power measure\t: starting error:", String(error).c_str())
+      DEBUG("[W][SLIB] SCD4x basic low power measure\t: starting error:", String(error).c_str());
     } else {
       DEBUG("-->[W][SLIB] SCD4x basic low power measure\t: done!");
     }
   }
 
   if (lowPowerConfig.lowPowerMode == MEDIUM_LOWPOWER) {  // Idle Single Shot Operation (SCD41 only).
-    sensors.setSampleTime(0);
-    if (error)
-      DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: starting error:", String(error).c_str());
     error = scd4x.measureSingleShot();
     if (error)
       DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: measureSingleShot() error:",
@@ -1784,24 +1811,24 @@ void Sensors::CO2scd4xInit() {
     }
   }
 
-  if (lowPowerConfig.lowPowerMode ==
-      MAXIMUM_LOWPOWER) {  // Power Cycled Single Shot Operation (SCD41 only)
-    // Power cycled single shot operation preferable to idle single shot operation only when the
-    // average sampling period is above 380 seconds.
-    sensors.setSampleTime(0);
+  // Power Cycled Single Shot Operation (SCD41 only)
+  // Power cycled single shot operation preferable to idle single shot operation only when the
+  // average sampling period is above 380 seconds.
+  if (lowPowerConfig.lowPowerMode == MAXIMUM_LOWPOWER) {
     error = scd4x.powerDown();
     if (error)
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: powerDown() error:",
             String(error).c_str());
     error = scd4x.wakeUp();
     if (error)
-      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: powerUp() error:",
+      DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: wakeUp() error:",
             String(error).c_str());
     error = scd4x.measureSingleShot();
     if (error)
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: measureSingleShot() error:",
             String(error).c_str());
-    error = scd4x.readMeasurement(dummyCO2, dummyTemp, dummyHumi);
+    error = scd4x.readMeasurement(dummyCO2, dummyTemp,
+                                  dummyHumi);  // dummy read to discard first measurement
     if (error) {
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: readMeasurement() error:",
             String(error).c_str());
@@ -1856,6 +1883,43 @@ void Sensors::setSCD4xAltitudeOffset(float offset) {
     delay(510);
     scd4x.setSensorAltitude(uint16_t(offset));
     scd4x.startPeriodicMeasurement();
+  }
+}
+
+// 13th bit of the featureSet is the type of sensor
+// uint8_t typeOfSensor = ((featureSet & 0x1000) >> 12);
+uint16_t Sensors::getSCD4xFeatureSet() {
+  uint16_t featureSet = 0;
+  uint16_t error = scd4x.getFeatures(featureSet);
+  uint8_t typeOfSensor = ((featureSet & 0x1000) >> 12);
+  if (error != 0) {
+    Serial.println("-->[MAIN] SCD4x getFeatures error: " + String(error));
+    scd4xModel = SCD4X_NONE;
+    return 0;
+  }
+  switch (typeOfSensor) {
+    case 0:
+      scd4xModel = SCD4X_SCD40;
+      break;
+    case 1:
+      scd4xModel = SCD4X_SCD41;
+      break;
+    default:
+      scd4xModel = SCD4X_NONE;
+      featureSet = 0;
+      break;
+  }
+  return featureSet;
+}
+
+String Sensors::getSCD4xModel() {
+  uint16_t featureSet = getSCD4xFeatureSet();
+  uint8_t typeOfSensor = ((featureSet & 0x1000) >> 12);
+
+  if ((typeOfSensor == 0) || (typeOfSensor == 1)) {
+    return String("SCD4" + String(typeOfSensor));
+  } else {
+    return "NONE";
   }
 }
 
