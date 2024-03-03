@@ -186,6 +186,9 @@ void Sensors::setSampleTime(int seconds) {
   }
 }
 
+/// get loop time interval for each sensor sample
+int Sensors::getSampleTime() { return sample_time; }
+
 /**
  * @brief set CO2 recalibration PPM value (400 to 2000)
  * @param ppmValue the ppm value to set, normally 400.
@@ -1719,6 +1722,9 @@ void Sensors::CO2scd30Init() {
   if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {
     if (!scd30.setMeasurementInterval(sample_time)) {
       DEBUG("[W][SLIB] SCD30 basic low power measure\t: setting error");
+    } else {
+      DEBUG("-->[W][SLIB] SCD30 setting basic low power measure. Measurement interval\t:",
+            String(sample_time).c_str());
     }
   }
 }

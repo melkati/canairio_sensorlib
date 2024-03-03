@@ -168,7 +168,6 @@ enum LowPowerMode { NO_LOWPOWER, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOW
 // LOW POWER CONFIG
 struct LowPowerConfig {
   LowPowerMode lowPowerMode;
-  int measurementIntervalSeconds;
 };
 
 typedef void (*errorCbFn)(const char *msg);
@@ -277,6 +276,8 @@ class Sensors {
   bool isDataReady();
 
   void setSampleTime(int seconds);
+
+  int getSampleTime();
 
   void setOnDataCallBack(voidCbFn cb);
 
