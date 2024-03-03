@@ -1750,14 +1750,21 @@ void Sensors::CO2scd4xInit() {
 
   if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {  // High-Performance Mode
     error = scd4x.startPeriodicMeasurement();
-    if (error) DEBUG("[W][SLIB] SCD4x periodic measure\t: starting error:", String(error).c_str());
+    if (error) {
+      DEBUG("[W][SLIB] SCD4x periodic measure\t: starting error:", String(error).c_str());
+    } else {
+      DEBUG("-->[W][SLIB] SCD4x periodic measure\t: done!");
+    }
   }
 
   if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {  // Low Power Mode
     sensors.setSampleTime(30);
     error = scd4x.startLowPowerPeriodicMeasurement();
-    if (error)
-      DEBUG("[W][SLIB] SCD4x basic low power measure\t: starting error:", String(error).c_str());
+    if (error) {
+      DEBUG("[W][SLIB] SCD4x basic low power measure\t: starting error:", String(error).c_str())
+    } else {
+      DEBUG("-->[W][SLIB] SCD4x basic low power measure\t: done!");
+    }
   }
 
   if (lowPowerConfig.lowPowerMode == MEDIUM_LOWPOWER) {  // Idle Single Shot Operation (SCD41 only).
@@ -1769,9 +1776,12 @@ void Sensors::CO2scd4xInit() {
       DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: measureSingleShot() error:",
             String(error).c_str());
     error = scd4x.readMeasurement(dummyCO2, dummyTemp, dummyHumi);
-    if (error)
+    if (error) {
       DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: readMeasurement() error:",
             String(error).c_str());
+    } else {
+      DEBUG("-->[W][SLIB] SCD4x Idle Single Shot Operation\t: done!");
+    }
   }
 
   if (lowPowerConfig.lowPowerMode ==
@@ -1792,9 +1802,12 @@ void Sensors::CO2scd4xInit() {
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: measureSingleShot() error:",
             String(error).c_str());
     error = scd4x.readMeasurement(dummyCO2, dummyTemp, dummyHumi);
-    if (error)
+    if (error) {
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: readMeasurement() error:",
             String(error).c_str());
+    } else {
+      DEBUG("-->[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: done!");
+    }
   }
 }
 
