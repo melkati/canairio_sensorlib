@@ -168,8 +168,6 @@ struct LowPowerConfig {
   int measurementIntervalSeconds;
 };
 
-LowPowerConfig lowPowerConfig;
-
 typedef void (*errorCbFn)(const char *msg);
 typedef void (*voidCbFn)();
 
@@ -179,6 +177,8 @@ typedef void (*voidCbFn)();
  */
 class Sensors {
  public:
+
+ LowPowerConfig lowPowerConfig;
   /// SPS30 values. Only for Sensirion SPS30 sensor.
   struct sps_values val;
 
