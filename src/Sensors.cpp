@@ -170,6 +170,10 @@ void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
   Serial.printf("-->[SLIB] only CO2 low power \t: %s\r\n",
                 lowPowerMode != NO_LOWPOWER ? "true" : "false");
 
+  if (!i2conly && !CO2CM1106Init()) {
+    DEBUG("-->[SLIB] UART sensors detected\t:", "0");
+  }
+
   startI2C();
   CO2scd30Init();
   CO2scd4xInit();
