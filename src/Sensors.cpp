@@ -150,7 +150,7 @@ void Sensors::init(u_int pms_type, int pms_rx, int pms_tx) {
 }
 
 /**
- * @brief CO2 sensors with low power capbility init (actually only SCD4x and SCD30)
+ * @brief Init CO2 sensors with low power capability (actually only SCD4x, SCD30 and CM1106SL-NS)
  * @param lowPowerMode (mandatory) LowPowerMode enum value.
  */
 void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
@@ -170,9 +170,11 @@ void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
   Serial.printf("-->[SLIB] only CO2 low power \t: %s\r\n",
                 lowPowerMode != NO_LOWPOWER ? "true" : "false");
 
-  if (!i2conly && !CO2CM1106Init()) {
-    DEBUG("-->[SLIB] UART sensors detected\t:", "0");
-  }
+  // if (!i2conly) {
+  //   if (!CO2CM1106Init()) {
+  //   DEBUG("-->[SLIB] UART sensors detected\t:", "0");
+  //   }
+  // }
 
   startI2C();
   CO2scd30Init();
