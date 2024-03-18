@@ -150,7 +150,7 @@ void Sensors::init(u_int pms_type, int pms_rx, int pms_tx) {
 }
 
 /**
- * @brief CO2 sensors with low power capbility init (actually only SCD4x and SCD30)
+ * @brief Init CO2 sensors with low power capability (actually only SCD4x, SCD30 and CM1106SL-NS)
  * @param lowPowerMode (mandatory) LowPowerMode enum value.
  */
 void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
@@ -170,6 +170,12 @@ void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
   Serial.printf("-->[SLIB] only CO2 low power \t: %s\r\n",
                 lowPowerMode != HIGH_PERFORMANCE ? "true" : "false");
 
+  // if (!i2conly) {
+  //   if (!CO2CM1106Init()) {
+  //   DEBUG("-->[SLIB] UART sensors detected\t:", "0");
+  //   }
+  // }
+
   startI2C();
   CO2scd30Init();
   CO2scd4xInit();
@@ -185,6 +191,9 @@ void Sensors::setSampleTime(int seconds) {
     if (devmode) Serial.println("-->[SLIB] SCD30 interval time\t: " + String(seconds));
   }
 }
+
+/// get loop time interval for each sensor sample
+int Sensors::getSampleTime() { return sample_time; }
 
 /**
  * @brief set CO2 recalibration PPM value (400 to 2000)
@@ -258,14 +267,14 @@ void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
  * @param mode (mandatory) LowPowerMode enum value.
  */
 void Sensors::setLowPowerMode(LowPowerMode lowPowerMode) {
-  lowPowerConfig.lowPowerMode = lowPowerMode;
+  lowPowerData.lowPowerMode = lowPowerMode;
 }
 
 /**
  * @brief get the low power mode
  * @return LowPowerMode enum value.
  */
-LowPowerMode Sensors::getLowPowerMode() { return lowPowerConfig.lowPowerMode; }
+LowPowerMode Sensors::getLowPowerMode() { return lowPowerData.lowPowerMode; }
 
 /// restart and re-init all sensors (not recommended)
 void Sensors::restart() {
@@ -1716,9 +1725,12 @@ void Sensors::CO2scd30Init() {
     }
   }
 
-  if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {
+  if (lowPowerData.lowPowerMode == BASIC_LOWPOWER) {
     if (!scd30.setMeasurementInterval(sample_time)) {
       DEBUG("[W][SLIB] SCD30 basic low power measure\t: setting error");
+    } else {
+      DEBUG("-->[W][SLIB] SCD30 setting basic low power measure. Measurement interval\t:",
+            String(sample_time).c_str());
     }
   }
 }
@@ -1787,7 +1799,7 @@ void Sensors::CO2scd4xInit() {
     }
   }
 
-  if (lowPowerConfig.lowPowerMode == BASIC_LOWPOWER) {  // Low Power Mode
+  if (lowPowerData.lowPowerMode == BASIC_LOWPOWER) {  // Low Power Mode
     sensors.setSampleTime(30);
     error = scd4x.startLowPowerPeriodicMeasurement();
     if (error) {
@@ -1797,7 +1809,7 @@ void Sensors::CO2scd4xInit() {
     }
   }
 
-  if (lowPowerConfig.lowPowerMode == MEDIUM_LOWPOWER) {  // Idle Single Shot Operation (SCD41 only).
+  if (lowPowerData.lowPowerMode == MEDIUM_LOWPOWER) {  // Idle Single Shot Operation (SCD41 only).
     error = scd4x.measureSingleShot();
     if (error)
       DEBUG("[W][SLIB] SCD4x Idle Single Shot Operation\t: measureSingleShot() error:",
@@ -1814,7 +1826,7 @@ void Sensors::CO2scd4xInit() {
   // Power Cycled Single Shot Operation (SCD41 only)
   // Power cycled single shot operation preferable to idle single shot operation only when the
   // average sampling period is above 380 seconds.
-  if (lowPowerConfig.lowPowerMode == MAXIMUM_LOWPOWER) {
+  if (lowPowerData.lowPowerMode == MAXIMUM_LOWPOWER) {
     error = scd4x.powerDown();
     if (error)
       DEBUG("[W][SLIB] SCD4x Power Cycled Single Shot Operation\t: powerDown() error:",

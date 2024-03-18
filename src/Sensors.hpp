@@ -165,12 +165,6 @@ enum SCD4XModels { SCD4X_SCD40, SCD4X_SCD41, SCD4X_SCD42, SCD4X_NONE = 255 };
 // LOW POWER MODES
 enum LowPowerMode { HIGH_PERFORMANCE, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
 
-// LOW POWER CONFIG
-struct LowPowerConfig {
-  LowPowerMode lowPowerMode;
-  int measurementIntervalSeconds;
-};
-
 typedef void (*errorCbFn)(const char *msg);
 typedef void (*voidCbFn)();
 
@@ -180,13 +174,19 @@ typedef void (*voidCbFn)();
  */
 class Sensors {
  public:
+  // CSD4X sensor detected (if any)
   String scd4xModel = "NONE";
 
+  // SCD4X feature set
   uint16_t scd4xFeatureSet = 0;
+  typedef struct {
+    LowPowerMode lowPowerMode = NO_LOWPOWER;
+    uint32_t gpioConfig;
+  } lowPowerData_t;
 
   /// Low power configuration
+  lowPowerData_t lowPowerData;
 
-  LowPowerConfig lowPowerConfig;
   /// SPS30 values. Only for Sensirion SPS30 sensor.
   struct sps_values val;
 
@@ -277,6 +277,8 @@ class Sensors {
   bool isDataReady();
 
   void setSampleTime(int seconds);
+
+  int getSampleTime();
 
   void setOnDataCallBack(voidCbFn cb);
 
