@@ -165,6 +165,12 @@ enum SCD4XModels { SCD4X_SCD40, SCD4X_SCD41, SCD4X_SCD42, SCD4X_NONE = 255 };
 // LOW POWER MODES
 enum LowPowerMode { HIGH_PERFORMANCE, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
 
+// LOW POWER CONFIG
+struct LowPowerConfig {
+  LowPowerMode lowPowerMode;
+  int measurementIntervalSeconds;
+};
+
 typedef void (*errorCbFn)(const char *msg);
 typedef void (*voidCbFn)();
 
