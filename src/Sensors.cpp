@@ -168,7 +168,7 @@ void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
   Serial.println("-->[SLIB] sea level pressure\t: " + String(sealevel) + " hPa");
   Serial.printf("-->[SLIB] only i2c sensors  \t: %s\r\n", i2conly ? "true" : "false");
   Serial.printf("-->[SLIB] only CO2 low power \t: %s\r\n",
-                lowPowerMode != NO_LOWPOWER ? "true" : "false");
+                lowPowerMode != HIGH_PERFORMANCE ? "true" : "false");
 
   startI2C();
   CO2scd30Init();
@@ -1085,7 +1085,7 @@ void Sensors::CO2scd4xRead() {
   float tCO2temp, tCO2humi = 0;
   bool sensorDataReady = false;
   switch (lowPowerConfig.lowPowerMode) {
-    case NO_LOWPOWER:
+    case HIGH_PERFORMANCE:
       error = scd4x.getDataReadyFlag(sensorDataReady);
       if (!sensorDataReady) return;
       error = scd4x.readMeasurement(tCO2, tCO2temp, tCO2humi);
@@ -1710,7 +1710,7 @@ void Sensors::CO2scd30Init() {
     delay(10);
   }
 
-  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {
+  if (lowPowerConfig.lowPowerMode == HIGH_PERFORMANCE) {
     if (!scd30.setMeasurementInterval(2)) {
       DEBUG("[W][SLIB] SCD30 periodic measure\t: setting error");
     }
@@ -1777,7 +1777,7 @@ void Sensors::CO2scd4xInit() {
     setSCD4xTempOffset(toffset);
   }
 
-  if (lowPowerConfig.lowPowerMode == NO_LOWPOWER) {  // High-Performance Mode
+  if (lowPowerConfig.lowPowerMode == HIGH_PERFORMANCE) {  // High-Performance Mode
     setSampleTime(5);
     error = scd4x.startPeriodicMeasurement();
     if (error) {
