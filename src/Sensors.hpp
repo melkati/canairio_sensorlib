@@ -187,7 +187,6 @@ class Sensors {
   uint16_t scd4xFeatureSet = 0;
   typedef struct {
     LowPowerMode lowPowerMode = HIGH_PERFORMANCE;
-    uint32_t gpioConfig;
   } lowPowerData_t;
 
   /// Low power configuration

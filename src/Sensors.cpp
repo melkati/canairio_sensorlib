@@ -1093,7 +1093,7 @@ void Sensors::CO2scd4xRead() {
   uint16_t error = 0;
   float tCO2temp, tCO2humi = 0;
   bool sensorDataReady = false;
-  switch (lowPowerConfig.lowPowerMode) {
+  switch (lowPowerData.lowPowerMode) {
     case HIGH_PERFORMANCE:
       error = scd4x.getDataReadyFlag(sensorDataReady);
       if (!sensorDataReady) return;
@@ -1719,7 +1719,7 @@ void Sensors::CO2scd30Init() {
     delay(10);
   }
 
-  if (lowPowerConfig.lowPowerMode == HIGH_PERFORMANCE) {
+  if (lowPowerData.lowPowerMode == HIGH_PERFORMANCE) {
     if (!scd30.setMeasurementInterval(2)) {
       DEBUG("[W][SLIB] SCD30 periodic measure\t: setting error");
     }
@@ -1789,7 +1789,7 @@ void Sensors::CO2scd4xInit() {
     setSCD4xTempOffset(toffset);
   }
 
-  if (lowPowerConfig.lowPowerMode == HIGH_PERFORMANCE) {  // High-Performance Mode
+  if (lowPowerData.lowPowerMode == HIGH_PERFORMANCE) {  // High-Performance Mode
     setSampleTime(5);
     error = scd4x.startPeriodicMeasurement();
     if (error) {
