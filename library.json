@@ -81,7 +81,7 @@
     {"name":"Adafruit BMP280 Library", "owner":"adafruit","version":"2.6.8"},
     {"name":"Adafruit BME680 Library","owner":"adafruit","version":"2.0.2"},
     {"name":"Adafruit SHT31 Library", "owner":"adafruit","version":"2.2.2"},
-    {"name":"Adafruit SCD30", "owner":"adafruit","version":"1.0.9"},
+    {"name":"Adafruit SCD30", "version":"https://github.com/melkati/Adafruit_SCD30.git#stopContinuousMeasurement"},
     {"name":"Adafruit BusIO", "owner":"adafruit","version":"1.14.5"},
     {"name":"AM232X", "owner":"robtillaart", "version":"0.5.0"},
     {"name":"sps30", "owner":"paulvha","version":"1.4.17"},
