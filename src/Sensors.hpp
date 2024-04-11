@@ -163,13 +163,17 @@ enum class TEMPUNIT { CELSIUS, FAHRENHEIT, KELVIN };
 enum SCD4XModels { SCD4X_SCD40, SCD4X_SCD41, SCD4X_SCD42, SCD4X_NONE = 255 };
 
 // LOW POWER MODES
-enum LowPowerMode { HIGH_PERFORMANCE, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
+enum LowPowerModes { HIGH_PERFORMANCE, BASIC_LOWPOWER, MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER };
 
-// LOW POWER CONFIG
-struct LowPowerConfig {
-  LowPowerMode lowPowerMode;
-  int measurementIntervalSeconds;
-};
+// MEASUREMENT MODES
+enum MeasurementModes { STOP, PERIODIC_MEASUREMENT, PERIODIC_LOW_POWER, SINGLE_SHOOT };
+
+// // LOW POWER CONFIG
+// struct LowPowerConfig {
+//   LowPowerModes lowPowerMode;
+//   MeasurementModes measurementMode;
+//   int measurementIntervalSeconds;
+// };
 
 typedef void (*errorCbFn)(const char *msg);
 typedef void (*voidCbFn)();
@@ -186,7 +190,8 @@ class Sensors {
   // SCD4X feature set
   uint16_t scd4xFeatureSet = 0;
   typedef struct {
-    LowPowerMode lowPowerMode = HIGH_PERFORMANCE;
+    LowPowerModes lowPowerMode = HIGH_PERFORMANCE;
+    MeasurementModes measurementMode = STOP;
   } lowPowerData_t;
 
   /// Low power configuration
@@ -273,7 +278,7 @@ class Sensors {
 
   void init(u_int pms_type = 0, int pms_rx = PMS_RX, int pms_tx = PMS_TX);
 
-  void initCO2LowPowerMode(LowPowerMode lowPowerMode);
+  void initCO2LowPowerMode(SENSORS sensor_type, LowPowerMode lowPowerMode);
 
   void loop();
 

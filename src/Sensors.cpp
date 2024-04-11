@@ -151,10 +151,10 @@ void Sensors::init(u_int pms_type, int pms_rx, int pms_tx) {
 
 /**
  * @brief Init CO2 sensors with low power capability (actually only SCD4x, SCD30 and CM1106SL-NS)
+ * @param Sensor (mandatory) SENSOR_TYPE enum value.
  * @param lowPowerMode (mandatory) LowPowerMode enum value.
  */
-void Sensors::initCO2LowPowerMode(LowPowerMode lowPowerMode) {
-// override with debug INFO level (>=3)
+void Sensors::initCO2LowPowerMode(SENSORS sensor_type, LowPowerMode lowPowerMode) {
 #ifdef CORE_DEBUG_LEVEL
   if (CORE_DEBUG_LEVEL >= 3) devmode = true;
 #endif
@@ -224,11 +224,13 @@ void Sensors::setCO2RecalibrationFactor(int ppmValue) {
     uint16_t frcCorrection = 0;
     uint16_t error = 0;
     scd4x.stopPeriodicMeasurement();
+    lowPowerData.measurementMode = STOP;
     delay(510);
     error = scd4x.performForcedRecalibration(ppmValue, frcCorrection);
     if (error) Serial.printf("-->[SLIB] SCD4X recalibration\t: error frc:%d\r\n", frcCorrection);
     delay(50);
     scd4x.startPeriodicMeasurement();
+    lowPowerData.measurementMode = PERIODIC_MEASUREMENT;
   }
 }
 
@@ -247,10 +249,11 @@ void Sensors::setCO2AltitudeOffset(float altitude) {
   }
   if (isSensorRegistered(SENSORS::SSCD4X)) {
     scd4x.stopPeriodicMeasurement();
-    delay(510);
+    lowPowerData.measurementMode = STOP;
+    // delay(510); // Delay already in scd4x.stopPeriodicMeasurement() method
     scd4x.setSensorAltitude(altoffset);
-    delay(100);
     scd4x.startPeriodicMeasurement();
+    lowPowerData.measurementMode = PERIODIC_MEASUREMENT;
   }
 }
 
