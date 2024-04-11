@@ -278,7 +278,7 @@ class Sensors {
 
   void init(u_int pms_type = 0, int pms_rx = PMS_RX, int pms_tx = PMS_TX);
 
-  void initCO2LowPowerMode(SENSORS sensor_type, LowPowerMode lowPowerMode);
+  void initCO2LowPowerMode(SENSORS sensor_type, LowPowerModes lowPowerMode);
 
   void loop();
 
@@ -352,9 +352,9 @@ class Sensors {
 
   void setCO2RecalibrationFactor(int ppmValue);
 
-  void setLowPowerMode(LowPowerMode lowPowerMode);
+  void setLowPowerMode(LowPowerModes lowPowerMode);
 
-  LowPowerMode getLowPowerMode();
+  LowPowerModes getLowPowerMode();
 
   void detectI2COnly(bool enable);
 

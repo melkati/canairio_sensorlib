@@ -91,8 +91,8 @@ void onSensorDataError(const char* msg) {}
  ******************************************************************************/
 
 void setup() {
-  LowPowerMode powerMode = MAXIMUM_LOWPOWER;  // Choose HIGH_PERFORMANCE, BASIC_LOWPOWER,
-                                              // MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER
+  LowPowerModes powerMode = MAXIMUM_LOWPOWER;  // Choose HIGH_PERFORMANCE, BASIC_LOWPOWER,
+                                               // MEDIUM_LOWPOWER, MAXIMUM_LOWPOWER
   Serial.begin(115200);
   delay(200);
   Serial.println("\n== Sensor test setup ==\n");

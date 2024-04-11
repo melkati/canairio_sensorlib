@@ -152,9 +152,9 @@ void Sensors::init(u_int pms_type, int pms_rx, int pms_tx) {
 /**
  * @brief Init CO2 sensors with low power capability (actually only SCD4x, SCD30 and CM1106SL-NS)
  * @param Sensor (mandatory) SENSOR_TYPE enum value.
- * @param lowPowerMode (mandatory) LowPowerMode enum value.
+ * @param lowPowerMode (mandatory) LowPowerModes enum value.
  */
-void Sensors::initCO2LowPowerMode(SENSORS sensor_type, LowPowerMode lowPowerMode) {
+void Sensors::initCO2LowPowerMode(SENSORS sensor_type, LowPowerModes lowPowerMode) {
 #ifdef CORE_DEBUG_LEVEL
   if (CORE_DEBUG_LEVEL >= 3) devmode = true;
 #endif
@@ -267,17 +267,17 @@ void Sensors::setSeaLevelPressure(float hpa) { sealevel = hpa; }
 
 /**
  * @brief set the low power mode
- * @param mode (mandatory) LowPowerMode enum value.
+ * @param mode (mandatory) LowPowerModes enum value.
  */
-void Sensors::setLowPowerMode(LowPowerMode lowPowerMode) {
+void Sensors::setLowPowerMode(LowPowerModes lowPowerMode) {
   lowPowerData.lowPowerMode = lowPowerMode;
 }
 
 /**
  * @brief get the low power mode
- * @return LowPowerMode enum value.
+ * @return LowPowerModes enum value.
  */
-LowPowerMode Sensors::getLowPowerMode() { return lowPowerData.lowPowerMode; }
+LowPowerModes Sensors::getLowPowerMode() { return lowPowerData.lowPowerMode; }
 
 /// restart and re-init all sensors (not recommended)
 void Sensors::restart() {
