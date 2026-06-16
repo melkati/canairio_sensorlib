@@ -253,11 +253,11 @@ void Sensors::setCO2RecalibrationFactor(int ppmValue) {
  */
 void Sensors::setAutoSelfCalibration(bool enable, uint16_t sleepIntervalSecs) {
   if (isSensorRegistered(SENSORS::SSCD30)) {
-    Serial.println("-->[SLIB] SCD30 auto self-calibration\t: " + String(enable ? "ON" : "OFF"));
+    if (devmode) Serial.println("-->[SLIB] SCD30 auto self-calibration\t: " + String(enable ? "ON" : "OFF"));
     scd30.selfCalibrationEnabled(enable);
   }
   if (isSensorRegistered(SENSORS::SMHZ19)) {
-    Serial.println("-->[SLIB] MH-Z19 auto baseline (ABC)\t: " + String(enable ? "ON" : "OFF"));
+    if (devmode) Serial.println("-->[SLIB] MH-Z19 auto baseline (ABC)\t: " + String(enable ? "ON" : "OFF"));
     mhz19.autoCalibration(enable);
   }
   if (isSensorRegistered(SENSORS::SSCD4X)) {
@@ -283,7 +283,7 @@ void Sensors::setAutoSelfCalibration(bool enable, uint16_t sleepIntervalSecs) {
     scd4x.getAutomaticSelfCalibrationInitialPeriod(curInit);
     scd4x.getAutomaticSelfCalibrationStandardPeriod(curStd);
     bool changed = (curAsc != wantAsc) || (enable && (curInit != wantInit || curStd != wantStd));
-    Serial.println("-->[SLIB] SCD4x ASC " + String(enable ? "ON" : "OFF") +
+    if (devmode) Serial.println("-->[SLIB] SCD4x ASC " + String(enable ? "ON" : "OFF") +
                    (enable ? (" init=" + String(wantInit) + "h std=" + String(wantStd) + "h") : "") +
                    (changed ? " (persisting)" : " (unchanged)"));
     if (changed) {
@@ -295,6 +295,10 @@ void Sensors::setAutoSelfCalibration(bool enable, uint16_t sleepIntervalSecs) {
       scd4x.persistSettings();  // EEPROM write only when something actually changed
     }
     delay(50);
+    // Restart in standard periodic mode, matching setCO2RecalibrationFactor(). A host
+    // that calls this while in a low-power/single-shot mode must restore that mode
+    // afterwards (in CO2-Gadget this runs during init, before toDeepSleep() sets up
+    // single-shot idle, so no extra handling is needed there).
     scd4x.startPeriodicMeasurement();
     lowPowerData.measurementMode = PERIODIC_MEASUREMENT;
   }
