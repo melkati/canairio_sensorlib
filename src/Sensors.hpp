@@ -352,6 +352,8 @@ class Sensors {
 
   void setCO2RecalibrationFactor(int ppmValue);
 
+  void setAutoSelfCalibration(bool enable, uint16_t sleepIntervalSecs = 300);
+
   void setLowPowerMode(LowPowerModes lowPowerMode);
 
   LowPowerModes getLowPowerMode();

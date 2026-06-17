@@ -235,6 +235,76 @@ void Sensors::setCO2RecalibrationFactor(int ppmValue) {
 }
 
 /**
+ * @brief Enable/disable the sensor's automatic self-calibration (ASC/ABC).
+ *
+ * Sensor-specific behaviour:
+ *  - SCD4x: enables ASC. The ASC period parameters assume 5-minute sampling, so
+ *    they are scaled to the actual sampling/sleep interval and persisted. The
+ *    settings are written to EEPROM only when they actually change (persist_settings
+ *    has limited write endurance and this is called on every boot).
+ *  - SCD30: native ASC via selfCalibrationEnabled().
+ *  - MH-Z19: ABC via autoCalibration() (overrides the hard-coded default in init).
+ *  - CM1106 / SenseAir S8: ABC is already enabled at init; nothing to toggle here.
+ *
+ * @param enable            true to enable auto self-calibration
+ * @param sleepIntervalSecs measurement/sleep interval in seconds (SCD4x ASC scaling)
+ *
+ * See: https://github.com/melkati/CO2-Gadget/issues/250
+ */
+void Sensors::setAutoSelfCalibration(bool enable, uint16_t sleepIntervalSecs) {
+  if (isSensorRegistered(SENSORS::SSCD30)) {
+    if (devmode) Serial.println("-->[SLIB] SCD30 auto self-calibration\t: " + String(enable ? "ON" : "OFF"));
+    scd30.selfCalibrationEnabled(enable);
+  }
+  if (isSensorRegistered(SENSORS::SMHZ19)) {
+    if (devmode) Serial.println("-->[SLIB] MH-Z19 auto baseline (ABC)\t: " + String(enable ? "ON" : "OFF"));
+    mhz19.autoCalibration(enable);
+  }
+  if (isSensorRegistered(SENSORS::SSCD4X)) {
+    uint16_t wantAsc = enable ? 1 : 0, wantInit = 0, wantStd = 0;
+    if (enable) {
+      // Default ASC periods (initial 48 h / standard 168 h) assume 5-minute
+      // sampling; scale them to the actual interval. See CO2-Gadget issue #250.
+      const float defaultIntervalMin = 5.0f;
+      float actualIntervalMin = (sleepIntervalSecs ? sleepIntervalSecs : 300) / 60.0f;
+      float scale = defaultIntervalMin / actualIntervalMin;
+      wantStd  = ((uint16_t)(168.0f * scale + 0.5f)) & ~0x3;  // round to multiple of 4
+      wantInit = ((uint16_t)(48.0f  * scale + 0.5f)) & ~0x3;
+      if (wantStd  < 4)    wantStd  = 4;
+      if (wantStd  > 1024) wantStd  = 1024;
+      if (wantInit < 4)    wantInit = 4;
+      if (wantInit > 1024) wantInit = 1024;
+    }
+    scd4x.stopPeriodicMeasurement();  // configuration commands require the sensor idle
+    lowPowerData.measurementMode = STOP;
+    delay(510);
+    uint16_t curAsc = 0, curInit = 0, curStd = 0;
+    scd4x.getAutomaticSelfCalibration(curAsc);
+    scd4x.getAutomaticSelfCalibrationInitialPeriod(curInit);
+    scd4x.getAutomaticSelfCalibrationStandardPeriod(curStd);
+    bool changed = (curAsc != wantAsc) || (enable && (curInit != wantInit || curStd != wantStd));
+    if (devmode) Serial.println("-->[SLIB] SCD4x ASC " + String(enable ? "ON" : "OFF") +
+                   (enable ? (" init=" + String(wantInit) + "h std=" + String(wantStd) + "h") : "") +
+                   (changed ? " (persisting)" : " (unchanged)"));
+    if (changed) {
+      if (enable) {
+        scd4x.setAutomaticSelfCalibrationInitialPeriod(wantInit);   // setters take uint16_t&
+        scd4x.setAutomaticSelfCalibrationStandardPeriod(wantStd);
+      }
+      scd4x.setAutomaticSelfCalibration(wantAsc);
+      scd4x.persistSettings();  // EEPROM write only when something actually changed
+    }
+    delay(50);
+    // Restart in standard periodic mode, matching setCO2RecalibrationFactor(). A host
+    // that calls this while in a low-power/single-shot mode must restore that mode
+    // afterwards (in CO2-Gadget this runs during init, before toDeepSleep() sets up
+    // single-shot idle, so no extra handling is needed there).
+    scd4x.startPeriodicMeasurement();
+    lowPowerData.measurementMode = PERIODIC_MEASUREMENT;
+  }
+}
+
+/**
  * @brief set CO2 altitude offset (m)
  * @param altitude (m).
  *
